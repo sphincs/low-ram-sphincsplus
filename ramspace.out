@@ -1,0 +1,15 @@
+This file lists the amount of RAM used by the tiny sphincs package
+
+Parameter Set           CTX size  Keygen size  Sig size  Ver size
+ts_ps_sha2_128f_simple     472      1072         1024       992
+ts_ps_sha2_128s_simple     568      1168         1120      1088
+ts_ps_sha2_192f_simple     768      1392         1456      1408
+ts_ps_sha2_192s_simple     912      1536         1600      1552
+ts_ps_sha2_256f_simple     872      1504         1568      1536
+ts_ps_sha2_256s_simple    1032      1664         1728      1696
+ts_ps_shake_128f_simple    672      1384         1304      1112
+ts_ps_shake_128s_simple    768      1480         1400      1208
+ts_ps_shake_192f_simple    776      1496         1416      1224
+ts_ps_shake_192s_simple    920      1640         1560      1368
+ts_ps_shake_256f_simple    880      1592         1512      1320
+ts_ps_shake_256s_simple   1040      1752         1672      1480

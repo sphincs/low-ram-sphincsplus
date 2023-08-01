@@ -1,0 +1,337 @@
+This is the Tiny Sphincs+ implementation, aimed for use within an HSM.  In
+this case, "tiny" means that it is designed to minimize the amount
+of RAM used during the key generation/signing/verification process.  In the
+best case (SHA2_128F_SIMPLE), we use about 1k of RAM.
+
+Obvious question: a Sphincs+ signature is far larger than that; aren't we
+counting the buffer to hold the signature?  The answer is: we generate a
+signature incrementally; that is, we allow the caller to ask 'give me the
+next M bytes of the signature'; we allow M as small as 1 byte.  If the HSM
+can output those M bytes to the main CPU, and then repeat this process for
+the next M bytes, this works.
+
+And, yes, this implementation is compatible with the Sphincs+ reference code
+(the NIST draft version, that is, the 'consistent_w' branch).  In addition.
+it performs the same transform as the reference code, specifically,
+the same mapping randomness -> private key and private key, randomness,
+message -> signature.
+
+How to use this package: the first thing to do is consider what Sphincs+
+parameter set (or sets) you need to support.  The package can support 12
+different parameter sets (and multiple different parameter sets at the same
+time); however it can use less RAM if you limit what it needs to support.
+To define which parameter sets you need to be supported, go to tune.h and
+reset the following parameters:
+  TS_SUPPORT_SHAKE    -> Set it to 1 if you need SHAKE-based parameter
+                         sets, 0 if you don't
+  TS_SUPPORT_SHA2     -> Set it to 1 if you need SHA2-based parameter sets,
+                         0 if you don't
+  TS_SUPPORT_L5       -> Set it to 1 if you need L5 parameter sets
+  TS_SUPPORT_L3       -> Set it to 1 if you need L3 parameter sets
+  TS_SUPPORT_S        -> Set it to 1 if you need S(low) parameter sets,
+                         0 if you don't
+These parameters are used to size various internal arrays; setting things
+to 0 (for parameter sets you don't need) make these arrays smaller, hence
+reducing the RAM used.  F and L1 parameter sets can work with the minimal
+array sizes, and so there's we wouldn't gain anything by beting able to
+disable them.
+In addition, there's a last setting TS_SHA2_OPTIMIZATION; it doesn't
+enable or disable any parameter sets; however if SHA2 is enabled, this uses
+a bit more RAM to gain quite a bit of performance.  It should be set to 1
+unless you really need to minimize the amount of RAM used.  It has no
+effect if TS_SUPPORT_SHA2 is 0
+
+With that in place, you rebuild and that'll generate the package.
+                     
+
+As for the API to this package:
+
+Generating a signature is a three step process:
+
+Step 1: allocate a struct ts_context structure:
+
+              struct ts_context ctx;
+
+        you don't need to initialize it to anything special
+
+Step 2: start off the signing process, by calling:
+
+              ts_init_sign( &ctx, message_to_sign, length_of_message,
+                            parameter_set, private_key, random_function );
+
+        where:
+          &ctx is the pointer to the context structure you allocated in
+            step 1.
+          message_to_sign, length_of_message is the plaintext message (and
+            its length)
+          parameter_set is a value specifying the Sphincs+ parameter set.
+            tiny_sphincs.h has the various supported parameter sets listed
+            at the end; a typical value might be &ts_ps_sha2_128f_simple
+          private_key is a buffer that holds the private key (in the
+            standard Sphincs+ format).  This buffer needs to hold the
+            private key through the entire signature process.
+          random_function is a function that fills in a buffer with random
+	    bytes, it is used to generate the OptRand internal value.  If 0
+            is passed here, the signature will use the default value.
+
+Step 3: generate the next k bytes of the signature, by calling:
+
+              int n = ts_sign( buffer, k, &ctx );
+
+          where:
+            buffer is where to place the next part of the signature.  It
+              needs to be k bytes long, of course
+            k is the number of bytes to generate
+            &ctx is the pointer to the context structure you allocated in
+              step 1 and initialized in step 2
+            n (the return value) is the number of bytes written to the
+              buffer. It will always write k bytes, until it hits the end
+              of the signature (in which case n will be the number of bytes
+              remaining).  If called after that, it will return 0 (no more
+              bytes left).
+
+After ts_sign has generated all bytes of the signature, we're done; you can
+discard the ctx if you want...
+
+
+
+Another thing this package can do is generate a private key in the first place.
+Alternatively, you could generate the private key externally and import it;
+this is provided in case you decide not to do that.
+This package uses a one-step process to generate the private key:
+
+          int success = ts_gen_key( private_key, public_key,
+                                    parameter_set, random_function );
+          where:
+            private_key is a buffer to hold the private key.
+              It needs to be ts_size_private_key(parameter_set) bytes long,
+	      that is, 4*N, where N is the hash size for this parameter
+              set.
+            public_key is a buffer to hold the public key.
+              It needs to be ts_size_public_key(parameter_set) bytes long,
+	      that is, 2*N, where N is the hash size for this parameter
+              set.  This is optional, that is, passing NULL is not an
+              error; it is easy to extract the public key from a private
+              key.
+            parameter_set is a value specifying the Sphincs+ parameter set.
+              tiny_sphincs.h has the various supported parameter sets
+              listed at the end; a typical value might be
+              &ts_ps_sha2_128f_simple
+            random_function is a function that fills in a buffer with
+              random bytes, it is used to select the private key (hence it
+              needs to be cryptographically secure).  This function is
+              expected to return 1 on success, 0 on failure.
+            success (the return value) is 1 if the keys were generated
+              successfully, 0 if not
+
+
+Another facility this package provides is the ability to verify a signature 
+again, streaming the signature (to minimize RAM used).  To do this, you do
+this four step process:
+
+Step 1: allocate a struct ts_context structure:
+
+              struct ts_context ctx;
+
+        you don't need to initialize it to anything special
+
+Step 2: start off the verification process, by calling:
+
+              ts_init_verify( &ctx, message_to_verify, length_of_message,
+                            parameter_set, public_key );
+
+        where:
+          &ctx is the pointer to the context structure you allocated in
+            step 1.
+          message_to_verify, length_of_message is the plaintext message
+            (and its length)
+          parameter_set is a value specifying the Sphincs+ parameter set.
+            tiny_sphincs.h has the various supported parameter sets listed
+            at the end; a typical value might be &ts_ps_sha2_128f_simple
+          public_key is a buffer that holds the public key (in the standard
+            Sphincs+ format.  Note that this buffer needs to hold the public
+            key through the entire signature process.
+
+Step 3: feed it the next k bytes of the signature, by calling:
+
+              int success = ts_update_verify( buffer, k, &ctx );
+
+          where:
+            buffer holds  the next part of the signature.
+            k is the number of bytes in this chunk of signature.
+            &ctx is the pointer to the context structure you allocated in
+              step 1 and initialized in step 2
+            success (the return value) is 1 is everything looks good so
+              far, 0 if it has detected a failure.  You can either react
+              to the failure immediately, or you can ignore any reported
+              intermediate failures and continue to feed it more parts of
+              the signature.  If that is convienent - ts_verify (below)
+              will report any failure, hence ignoring any intermediate
+              failures is safe.
+
+Step 4: after you've fed it the entire signature, you can check to see if
+        it validated:
+
+              int success = ts_verify( buffer, &ctx );
+
+        This returns 1 if the signature verifies, 0 if not.
+
+After you're done (either successfully or not), you can discard ctx.
+
+
+Some other (less interesting) things that this package provides: 
+
+        unsigned private_key_size = ts_size_private_key( parameter_set );
+        unsigned public_key_size = ts_size_public_key( parameter_set );
+        unsigned signature_size = ts_size_signature( parameter_set );
+
+        These return the sizes of the private key, the public key and the
+        signature for the parameter set
+
+
+Suggestions for parameter sets:
+
+        This package is designed with HSMs in mind.  HSMs are typically
+        designed with security (and not utmost performance) in mind.
+        Because of this, we recommend that an F parameter set is more
+        likely to yield reasonable performance (as well as a bit less RAM).
+        SHA-2 parameter sets tend to use a bit less RAM than SHAKE ones,
+        as well as performing a bit quicker.  We recommend that you take
+        that into consideration.
+
+
+Concepts in this package:
+
+memory management
+	All memory used by this package is either passed in by the
+        application (such as a context pointer, or a buffer to hold some
+        result), or allocated as auto (stack).  In addition, no VLAs are
+        used.  The lack of VLAs and malloc's should make it easier to
+        characterize exacty how much memory is used.
+
+parameter sets
+	This package can support multiple parameter sets at once from the
+	same code base.  That implies that the caller needs to specify the
+	parameter set when an operation is performed.  To denote the
+        parameter set, we define a set of global structures which each
+        represent a different parameter set; they have names such as
+        ts_ps_sha2_128f_simple (which stands for the SHA2-128F-SIMPLE
+	parameter set).  To specify a parameter set to one of the above
+        APIs, just pass a pointer to this global structure, such as:
+            unsigned sig_size = ts_size_signature(&ts_ps_sha2_128f_simple);
+
+tune.h
+	Because of our memory management practices, we need to allocate
+        things based on the worse case.  This may lead to using more memory
+        than needed at times; for example, if we can support
+        SHAKE-256S-SIMPLE, then we'll end up using that much memory when
+        we're generating a SHA2-128F-SIMPLE parameter set (even though the
+        latter parameter set could use less memory).  To allow the user to
+        tune things to meet his requirements, we include tune.h, which
+        allows the user to specify which types of parameter sets he will
+        use.  The parameters that are available in tune.h:
+            TS_SUPPORT_L5    If this is set, then the package will assume
+			     that arrays need to be sized with L5 parameter
+			     sets in mind.  Turning this one will also
+			     makes the L3 parameter sets available (because
+			     those fit within the L5 sizing).
+            TS_SUPPORT_L3    If this is set, then the packet size things
+			     for L3 parameter sets.
+		If neither are specified, then only L1 parameter sets will
+		be available (which uses the smallest arrray sizes)
+            TS_SUPPORT_SHAKE  If this is set, then SHAKE parameter sets
+			      will be available.
+            TS_SUPPORT_SHA2   If this is set, then SHA2 parameter sets
+                              will be available.
+		Both can be specified; you have to pick at least one.
+            TS_SUPPORT_S      If this is set, then S parameter sets will be
+			      avai1able.  This is here because the S
+			      parameter sets require more stack space to
+			      traverse the FORS and Merkle trees.
+			      F parameter sets are always available.
+            TS_SHA2_OPTIMIZATION Turning this on provides a speed up for the
+			      SHA2 parameter sets.  The speed up is
+			      considerable, while the additional memory is
+			      small (32 bytes if only L1 parameter sets are
+			      enabled); however if you need to absolutely
+			      minimize the RAM used, you can turn this off.
+
+Supported parameter sets
+	Currently, we support all SHAKE and SHA2 simple parameter sets
+	(subject to the restrictions that you specify within tune.h).  As
+        for the future plans, well, since NIST has stated that they don't
+	intend to standardize the robust parameter sets, we'll likely not
+	support them (they aren't trivial to implement with minimal size
+        anyways).  And, Haraka really won't happen (it's not small-RAM
+	friendly, not to mention not NIST-endorsed).
+
+
+Utilities included with this package:
+
+- Regression tests
+
+  We include a shell script (regression_test) that recompiles the package
+  and runs a regression test (with all parameter sets enabled); it lists
+  whether the tests passed or failed
+
+- Measuring RAM usage
+
+  We include a python script (ramspace.py) and goes through every supported
+  parameter set, recompiles the package for that parameter set and lists
+  how much RAM is used (for key generation, signing and verification).  The
+  output for my (Intel based) platform is in ramspace.out
+
+  - What's included in the RAM space measurement
+      - The context structure, and any stack space used
+  - What's not included
+      - The space for the public/private keys, the message being signed
+        and the space to hold the temporary outputs.
+  In addition, the compiler I use is not careful about minimizing RAM
+  space (as a handful of bytes of stack space is rarely an issue for high
+  performance CPUs); I would expect a compiler targeted toward an HSM CPU
+  would do somewhat better.
+  And, for SHA2 parameter sets, TS_SHA2_OPTIMIZATION is turned off.
+
+
+Random thoughts:
+
+- One suggested idea was to allow the message to be entered incrementally
+  during signature generation.  The initial problem with that is that the
+  current Sphincs+ signing process is a two pass procedure (one to produce
+  R, and another to hash R and the message together).  Now, we could
+  generate R directly, which would make incremental signing easy; however
+  that's not what the Sphincs+ docs specify right now.
+  Would HSMs insist on being able to sign large messages?
+  One thing we could do is add an API that would support that operation
+  (while keeping the current API that would implement the two-pass
+   algorithm).
+
+- As for making the verifier accept the mesage incrementally (in addition
+  to the signature), well, that'd be difficult.  The issue is that the
+  Sphincs+ verification process needs the first N bytes of the signature,
+  then the entire mesage, and then the rest of the signature, and there's
+  no way to process things in a different order - it's not clear how to
+  design an API that would allow an application (who should be ignorant of
+  such details) to submit things in that order (and given our goal of using
+  minimal RAM, buffering things is a nonstarter).  While we could have the
+  caller pass the entire signature up front (for us to process
+  incrementally), and pass the message incrementally, I would expect that
+  there's less need for that.
+
+- The SHA2 implementations here has been customized to reduce the amount of
+  RAM used (by reusing the message buffer to hold the expanded key
+  schedule).  The SHAKE implementation is standard.
+
+- Currently, we assume that the compiler supports uint64_t.  Is this true
+  for compilers targetting HSM CPUs?  While we could write some code to do
+  those operations on uint32_t[2], that'd be less efficient than what a
+  compiler could do (even if the CPU itself didn't support 64 bit
+  operations natively).  We use uint64_t in the ts_context::merkle_tree
+  variable, as well as the current hash implementations.
+
+- A lot of the internal functions have generic names; we need to add ts_
+  prefixes to avoid name collisions.
+
+- To do: comments, comments and more comments
+
+- To do: more regression tests (especially with verify)
