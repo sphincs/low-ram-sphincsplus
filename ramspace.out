@@ -13,3 +13,10 @@ ts_ps_shake_192f_simple    776      1496         1416      1224
 ts_ps_shake_192s_simple    920      1640         1560      1368
 ts_ps_shake_256f_simple    880      1592         1512      1320
 ts_ps_shake_256s_simple   1040      1752         1672      1480
+
+Legend:
+Parameter Set - the Sphincs+ parameter set being tested.  Each test used a minimal tune.h to enable the named parameter set
+CTX size - the size of the ts_context structure used to track Sphincs+ state while streaming.  This is included in the RAM usage for Sig size and Ver size
+Keygen size - the amount of RAM used for key generation
+Sig size - the amount of RAM used for signature generation
+Ver size - the amount of RAM used for signature verification
