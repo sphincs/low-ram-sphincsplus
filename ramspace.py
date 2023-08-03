@@ -46,3 +46,11 @@ for hash in hashes:
 
             run(["make", "clean"], stdout=DEVNULL, stderr=sys.stderr)
 
+file1.write( "\n" );
+file1.write( "Legend:\n" );
+file1.write( "Parameter Set - the Sphincs+ parameter set being tested.  Each test used a minimal tune.h to enable the named parameter set\n" );
+file1.write( "CTX size - the size of the ts_context structure used to track Sphincs+ state while streaming.  This is included in the RAM usage for Sig size and Ver size\n" );
+file1.write( "Keygen size - the amount of RAM used for key generation\n" );
+file1.write( "Sig size - the amount of RAM used for signature generation\n" );
+file1.write( "Ver size - the amount of RAM used for signature verification\n" );
+file1.close()
