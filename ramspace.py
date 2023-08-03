@@ -46,6 +46,7 @@ for hash in hashes:
 
             run(["make", "clean"], stdout=DEVNULL, stderr=sys.stderr)
 
+file1 = open("ramspace.out", "a" );
 file1.write( "\n" );
 file1.write( "Legend:\n" );
 file1.write( "Parameter Set - the Sphincs+ parameter set being tested.  Each test used a minimal tune.h to enable the named parameter set\n" );
