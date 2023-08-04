@@ -31,7 +31,8 @@ int ts_gen_key( unsigned char *private_key,
     memset( &ctx, 0, sizeof ctx );  /* Just in case we forget to */
                                     /* initialize something */
     ctx.ps = ps;
-    ctx.public_key = CONVERT_PRIVATE_KEY_TO_PUBLIC(private_key, n);
+    unsigned char *pub;  /* Writable pointer to the public key */
+    ctx.public_key = pub = CONVERT_PRIVATE_KEY_TO_PUBLIC(private_key, n);
 #if TS_SHA2_OPTIMIZATION
     if (ps->compute_prehash) ps->compute_prehash( &ctx );
 #endif
@@ -49,7 +50,7 @@ int ts_gen_key( unsigned char *private_key,
      * place it into ctx.auth_path_buffer
      */
     for (;;) {
-        if (0 == ts_sign( CONVERT_PUBLIC_KEY_TO_ROOT(ctx.public_key, n),
+        if (0 == ts_sign( CONVERT_PUBLIC_KEY_TO_ROOT(pub, n),
 			  n, &ctx )) {
 	    /* We finished computing the top level signature */
 	    break;
@@ -57,12 +58,12 @@ int ts_gen_key( unsigned char *private_key,
     }
 
     /* The root is in auth_path_buffer; copy it to its place in the key */
-    memcpy( CONVERT_PUBLIC_KEY_TO_ROOT(ctx.public_key, n),
+    memcpy( CONVERT_PUBLIC_KEY_TO_ROOT(pub, n),
 	    ctx.auth_path_buffer, n );
 
     /* And if the caller asked for the public key, give it to them */
     if (public_key) {
-	memcpy( public_key, ctx.public_key, 2*n );
+	memcpy( public_key, pub, 2*n );
     }
 
     return 1;

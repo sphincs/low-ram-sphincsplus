@@ -74,7 +74,7 @@ static void compress( SHA256_CTX *ctx, const void *buf ) {
      */
     p = (const unsigned char*)buf;
     for (i=0; i<16; i++) {
-        ctx->x.W[i] = bytes_to_ull(p, 4);
+        ctx->x.W[i] = ts_bytes_to_ull(p, 4);
         p += 4;
     }
 
@@ -160,7 +160,7 @@ void SHA256_final( unsigned char *digest, SHA256_CTX *ctx ) {
 void SHA256_final_trunc( unsigned char *digest, SHA256_CTX *ctx, unsigned n ) {
     unsigned char finalcount[SHA256_FINALCOUNT_SIZE];
 
-    ull_to_bytes(finalcount, ctx->count, SHA256_FINALCOUNT_SIZE);
+    ts_ull_to_bytes(finalcount, ctx->count, SHA256_FINALCOUNT_SIZE);
 
     SHA256_update(ctx, "\200", 1);
 
@@ -176,7 +176,7 @@ void SHA256_final_trunc( unsigned char *digest, SHA256_CTX *ctx, unsigned n ) {
      * of bigendian 4-byte words onto the output
      */ 
     for (unsigned i=0; i<n/4; i++) {
-        u32_to_bytes( digest + 4*i, ctx->h[i] );
+        ts_ull_to_bytes( digest + 4*i, ctx->h[i], 4 );
     }
 }
 

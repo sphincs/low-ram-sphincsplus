@@ -6,6 +6,7 @@
 #include <string.h>
 #include "tiny_sphincs.h"
 #include "internal.h"
+#include "endian.h"
 
 static uint64_t extract_int_from_hash( const unsigned char *hash, 
 		unsigned *hash_offset, unsigned num_bits ) {
@@ -16,13 +17,6 @@ static uint64_t extract_int_from_hash( const unsigned char *hash,
     return sum & ((~(uint64_t)0) >> (64 - num_bits));
 }
 
-static void set_bigendian( unsigned char *dest, unsigned long long value, unsigned bytes ) {
-    for (unsigned k = bytes; k>0; k--) {
-	dest[k-1] = value & 0xff;
-	value >>= 8;
-    }
-}
-
 /*
  * These are routines to set various fields in the ADR structure
  * These handle both the standard and SHA256 versions of that structure
@@ -31,16 +25,16 @@ static void set_layer_adr( unsigned layer, struct ts_context *ctx ) {
     if (!TS_SUPPORT_SHAKE || ctx->ps->sha256) {
 	ctx->adr[ LAYER_SHA256_OFFSET ] = layer;
     } else {
-	set_bigendian( &ctx->adr[ LAYER_OFFSET ], layer, 4 );
+	ts_ull_to_bytes( &ctx->adr[ LAYER_OFFSET ], layer, 4 );
     }
 }
 
 static void set_tree_adr( unsigned long long tree,
 	                   struct ts_context *ctx ) {
     if (!TS_SUPPORT_SHAKE || ctx->ps->sha256) {
-	set_bigendian( &ctx->adr[ TREE_SHA256_OFFSET ], tree, 8 );
+	ts_ull_to_bytes( &ctx->adr[ TREE_SHA256_OFFSET ], tree, 8 );
     } else {
-	set_bigendian( &ctx->adr[ TREE_OFFSET ], tree, 12 );
+	ts_ull_to_bytes( &ctx->adr[ TREE_OFFSET ], tree, 12 );
     }
 }
 
@@ -49,25 +43,25 @@ static void set_type_adr( unsigned type,
     if (!TS_SUPPORT_SHAKE || ctx->ps->sha256) {
 	ctx->adr[ TYPE_SHA256_OFFSET ] = type;
     } else {
-	set_bigendian( &ctx->adr[ TYPE_OFFSET ], type, 4 );
+	ts_ull_to_bytes( &ctx->adr[ TYPE_OFFSET ], type, 4 );
     }
 }
 
 static void set_keypair_adr( unsigned keypair,
 	                   struct ts_context *ctx ) {
     if (!TS_SUPPORT_SHAKE || ctx->ps->sha256) {
-	set_bigendian( &ctx->adr[ KEYPAIR_SHA256_OFFSET ], keypair, 4 );
+	ts_ull_to_bytes( &ctx->adr[ KEYPAIR_SHA256_OFFSET ], keypair, 4 );
     } else {
-	set_bigendian( &ctx->adr[ KEYPAIR_OFFSET ], keypair, 4 );
+	ts_ull_to_bytes( &ctx->adr[ KEYPAIR_OFFSET ], keypair, 4 );
     }
 }
 
 static void set_tree_height_adr( unsigned tree_height,
 	                   struct ts_context *ctx ) {
     if (!TS_SUPPORT_SHAKE || ctx->ps->sha256) {
-	set_bigendian( &ctx->adr[ TREEHEIGHT_SHA256_OFFSET ], tree_height, 4 );
+	ts_ull_to_bytes( &ctx->adr[ TREEHEIGHT_SHA256_OFFSET ], tree_height, 4 );
     } else {
-	set_bigendian( &ctx->adr[ TREEHEIGHT_OFFSET ], tree_height, 4 );
+	ts_ull_to_bytes( &ctx->adr[ TREEHEIGHT_OFFSET ], tree_height, 4 );
     }
 }
 #define set_chain_adr set_tree_height_adr /* Same location in adr struct */
@@ -75,9 +69,9 @@ static void set_tree_height_adr( unsigned tree_height,
 static void set_tree_index_adr( unsigned tree_index,
 	                   struct ts_context *ctx ) {
     if (!TS_SUPPORT_SHAKE || ctx->ps->sha256) {
-	set_bigendian( &ctx->adr[ TREEINDEX_SHA256_OFFSET ], tree_index, 4 );
+	ts_ull_to_bytes( &ctx->adr[ TREEINDEX_SHA256_OFFSET ], tree_index, 4 );
     } else {
-	set_bigendian( &ctx->adr[ TREEINDEX_OFFSET ], tree_index, 4 );
+	ts_ull_to_bytes( &ctx->adr[ TREEINDEX_OFFSET ], tree_index, 4 );
     }
 }
 #define set_hash_adr set_tree_index_adr /* Same location in the adr struct */

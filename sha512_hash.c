@@ -59,7 +59,7 @@ void ts_sha2_L35_hash_msg( unsigned char *output, size_t len_output,
     memcpy( &msg_hash[n], CONVERT_PUBLIC_KEY_TO_PUB_SEED(public_key, n), n );
 
     for (int i=0; len_output; i++) {
-        u32_to_bytes(&msg_hash[2*n+64], i);
+        ts_ull_to_bytes(&msg_hash[2*n+64], i, 4);
         SHA512_init( ctx );
         SHA512_update( ctx, msg_hash, 2*n+64+4 );
 	unsigned char buffer[64];

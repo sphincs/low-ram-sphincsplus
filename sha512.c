@@ -94,7 +94,7 @@ static void sha512_compress (SHA512_CTX * ctx, const void *buf) {
      */
     const unsigned char *p = (const unsigned char*)buf;
     for (i=0; i<16; i++) {
-        ctx->x.W[i] = bytes_to_ull(p, 8);
+        ctx->x.W[i] = ts_bytes_to_ull(p, 8);
         p += 8;
     }
 
@@ -179,7 +179,7 @@ void SHA512_final( unsigned char *digest, SHA512_CTX *ctx ) {
 void SHA512_final_trunc( unsigned char *digest, SHA512_CTX *ctx, unsigned n ) {
     unsigned char finalcount[SHA512_FINALCOUNT_SIZE];
 
-    ull_to_bytes(finalcount, ctx->count, SHA512_FINALCOUNT_SIZE);
+    ts_ull_to_bytes(finalcount, ctx->count, SHA512_FINALCOUNT_SIZE);
 
     SHA512_update(ctx, "\200", 1);
 
@@ -192,10 +192,10 @@ void SHA512_final_trunc( unsigned char *digest, SHA512_CTX *ctx, unsigned n ) {
 
     /*
      * The final state is an array of uint64_t's; place them as a series
-     * of bigendian 4-byte words onto the output
+     * of bigendian 8-byte words onto the output
      */ 
     for (unsigned i=0; i<n/8; i++) {
-        ull_to_bytes( digest + 8*i, ctx->state[i], 8 );
+        ts_ull_to_bytes( digest + 8*i, ctx->state[i], 8 );
     }
 }
 
