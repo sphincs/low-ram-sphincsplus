@@ -42,6 +42,25 @@
  */
 #define TS_SHA2_OPTIMIZATION 1
 
+/*
+ * This also doesn't actually define which parameter sets we can use; instead
+ * it defines which of three different approaches to implementing SHAKE-256
+ * All are valid (that is, the signatures are generated/verified correctly);
+ * however they have different practical implications.  Below are the options:
+ * 0 uses a relatively high performance Keccak implementation; it uses quite
+ *     a bit of RAM (stack space)
+ * 1 is an attempt to tweak the code to try to reduce the amount of stack
+ *     space (while maintaining most of the performance).  On my CPU/compiler,
+ *     it actually uses 8 bytes more RAM (I blame the optimizer in my
+ *     compiler); however it may work out better on yours
+ * 2 is a completely different Keccak implementation which uses far less
+ *     RAM (about 180 btes less).  On the other hand, it is considerably slower
+ *     (perhaps a factor of 10)
+ *
+ * This setting has no effect on SHA2 parameter sets
+ */
+#define TS_SHAKE256_OPT 0
+
 /* Sanity check */
 #if !TS_SUPPORT_SHAKE && !TS_SUPPORT_SHA2
 #error We need to support some hash function (either SHAKE or SHA2 or both)

@@ -21,6 +21,7 @@ for hash in hashes:
     for size in sizes:
         for speed in options:
             DFLAGS = "-DTUNE_H_ -DTS_SHA2_OPTIMIZATION=0"
+            DFLAGS = DFLAGS + " -DTS_SHAKE256_OPT=2"
             if size == 256:
                 DFLAGS = DFLAGS + " -DTS_SUPPORT_L5=1 -DTS_SUPPORT_L3=1"
             elif size == 192:

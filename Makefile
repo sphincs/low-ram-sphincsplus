@@ -1,5 +1,4 @@
 CC = /usr/bin/gcc
-CPP = /usr/bin/g++
 CFLAGS = -Wall -Wextra -Wpedantic -fomit-frame-pointer -Os
 NO_OPT_CFLAGS = -Wall -Wextra -Wpedantic -fomit-frame-pointer
 
@@ -11,8 +10,6 @@ DFLAGS += -DTUNE_H_ -DTS_SUPPORT_L5=1 -DTS_SUPPORT_SHAKE=1 \
 endif
 
 .PHONY: clean
-
-# %.o : %.cpp ; $(CPP) -c $(CFLAGS) $(DFLAGS) $< -o $@
 
 %.o : %.c ; $(CC) -c $(CFLAGS) $(DFLAGS) $< -o $@
 

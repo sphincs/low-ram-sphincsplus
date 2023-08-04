@@ -24,17 +24,17 @@ void ts_shake256_init_t_simple( union t_iterator *t,
     const unsigned char *public_key = ctx->public_key;
     SHAKE256_CTX *iter = &t->shake256_simple;
 
-    shake256_inc_init(iter);
+    ts_shake256_inc_init(iter);
 
-    shake256_inc_absorb(iter, CONVERT_PUBLIC_KEY_TO_PUB_SEED(public_key, n), n);
-    shake256_inc_absorb(iter, ctx->adr, ADR_SIZE);
+    ts_shake256_inc_absorb(iter, CONVERT_PUBLIC_KEY_TO_PUB_SEED(public_key, n), n);
+    ts_shake256_inc_absorb(iter, ctx->adr, ADR_SIZE);
 }
 
 void ts_shake256_next_t_simple( union t_iterator *t, const unsigned char *input,
 		     const struct ts_context *ctx ) {
     unsigned n = ctx->ps->n;
     SHAKE256_CTX *iter = &t->shake256_simple;
-    shake256_inc_absorb(iter, input, n);
+    ts_shake256_inc_absorb(iter, input, n);
 }
 
 void ts_shake256_final_t_simple(unsigned char *output, union t_iterator *t,
@@ -42,9 +42,9 @@ void ts_shake256_final_t_simple(unsigned char *output, union t_iterator *t,
     unsigned n = ctx->ps->n;
     SHAKE256_CTX *iter = &t->shake256_simple;
 
-    shake256_inc_finalize(iter);
+    ts_shake256_inc_finalize(iter);
 
-    shake256_inc_squeeze(output, n, iter);
+    ts_shake256_inc_squeeze(output, n, iter);
 }
 
 #endif

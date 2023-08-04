@@ -35,11 +35,27 @@ to 0 (for parameter sets you don't need) make these arrays smaller, hence
 reducing the RAM used.  F and L1 parameter sets can work with the minimal
 array sizes, and so there's we wouldn't gain anything by beting able to
 disable them.
-In addition, there's a last setting TS_SHA2_OPTIMIZATION; it doesn't
-enable or disable any parameter sets; however if SHA2 is enabled, this uses
-a bit more RAM to gain quite a bit of performance.  It should be set to 1
-unless you really need to minimize the amount of RAM used.  It has no
-effect if TS_SUPPORT_SHA2 is 0
+In addition, there're two last settings which don't enable or disable any
+parameter sets; however they do allow RAM/performance trade offs:
+   TS_SHA2_OPTIMIZATION -> if SHA2 is enabled, this uses a bit more RAM to
+                           gain quite a bit of performance.  It should be set
+                           to 1 unless you really need to minimize the amount
+                           of RAM used.  It has no effect if TS_SUPPORT_SHA2
+                           is 0
+   TS_SHAKE256_OPT      -> There are three options here on how SHAKE256 is
+                           implemented:
+                           0 - High performance implementation thatuses some
+                               additional RAM
+                           1 - An attempt by me to reduce the amount of RAM
+                               used, while not affecting performance that
+                               much.  It doesn't work on my system (it actually
+                               uses 8 bytes more RAM); it may work better on
+                               yours
+                           2 - An implementation that reduces the RAM used (by
+                               about 180 bytes), with the cost of reducing
+                               performance considerably (perhaps a factor
+                               of 10).
+                           It has no effect on SHA2 parameter sets
 
 With that in place, you rebuild and that'll generate the package.
                      
@@ -290,7 +306,8 @@ Utilities included with this package:
   space (as a handful of bytes of stack space is rarely an issue for high
   performance CPUs); I would expect a compiler targeted toward an HSM CPU
   would do somewhat better.
-  And, for SHA2 parameter sets, TS_SHA2_OPTIMIZATION is turned off.
+  And, TS_SHA2_OPTIMIZATION is turned off and TS_SHAKE256_OPT is set to 2
+  (both to minimize the RAM usage as much as possible).
 
 
 Random thoughts:

@@ -3,13 +3,33 @@
  * by Ronny Van Keer
  * and the public domain "TweetFips202" implementation
  * from https://twitter.com/tweetfips202
- * by Gilles Van Assche, Daniel J. Bernstein, and Peter Schwabe */
+ * by Gilles Van Assche, Daniel J. Bernstein, and Peter Schwabe
+ * and the tiny-sha3 implementation by Markku-Juhani O. Saarinen <mjos@iki.fi>
+ * (MIT license; see below)
+ *
+ * The MIT License (MIT)
+ *
+ * Copyright (c) 2015 Markku-Juhani O. Saarinen
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
+ *
+ * Note that we currently support only SHAKE256 (as we don't need any
+ * another hash function from the SHA-3 family) */
 
 #include <stddef.h>
 #include <stdint.h>
 #include <string.h>
 
 #include "fips202.h"
+#include "tune.h"
 
 #define NROUNDS 24
 static uint64_t ROL(uint64_t a, int offset) {
@@ -19,6 +39,7 @@ static uint64_t ROL(uint64_t a, int offset) {
 const int SHAKE256_RATE = 136;
 
 /* Keccak round constants */
+#if TS_SHAKE256_OPT != 2
 static const uint64_t KeccakF_RoundConstants[NROUNDS] = {
     0x0000000000000001ULL, 0x0000000000008082ULL,
     0x800000000000808aULL, 0x8000000080008000ULL,
@@ -33,6 +54,7 @@ static const uint64_t KeccakF_RoundConstants[NROUNDS] = {
     0x8000000080008081ULL, 0x8000000000008080ULL,
     0x0000000080000001ULL, 0x8000000080008008ULL
 };
+#endif
 
 /*************************************************
  * Name:        KeccakF1600_StatePermute
@@ -41,14 +63,10 @@ static const uint64_t KeccakF_RoundConstants[NROUNDS] = {
  *
  * Arguments:   - uint64_t *state: pointer to input/output Keccak state
  **************************************************/
+#if TS_SHAKE256_OPT != 2
 static void KeccakF1600_StatePermute(uint64_t *state) {
     int round;
 
-    uint64_t Aba, Abe, Abi, Abo, Abu;
-    uint64_t Aga, Age, Agi, Ago, Agu;
-    uint64_t Aka, Ake, Aki, Ako, Aku;
-    uint64_t Ama, Ame, Ami, Amo, Amu;
-    uint64_t Asa, Ase, Asi, Aso, Asu;
     uint64_t BCa, BCe, BCi, BCo, BCu;
     uint64_t Da, De, Di, Do, Du;
     uint64_t Eba, Ebe, Ebi, Ebo, Ebu;
@@ -56,6 +74,44 @@ static void KeccakF1600_StatePermute(uint64_t *state) {
     uint64_t Eka, Eke, Eki, Eko, Eku;
     uint64_t Ema, Eme, Emi, Emo, Emu;
     uint64_t Esa, Ese, Esi, Eso, Esu;
+
+#if TS_SHAKE256_OPT == 1
+
+/* Have the code directly access the state array */
+#define Aba state[0]
+#define Abe state[1]
+#define Abi state[2]
+#define Abo state[3]
+#define Abu state[4]
+#define Aga state[5]
+#define Age state[6]
+#define Agi state[7]
+#define Ago state[8]
+#define Agu state[9]
+#define Aka state[10]
+#define Ake state[11]
+#define Aki state[12]
+#define Ako state[13]
+#define Aku state[14]
+#define Ama state[15]
+#define Ame state[16]
+#define Ami state[17]
+#define Amo state[18]
+#define Amu state[19]
+#define Asa state[20]
+#define Ase state[21]
+#define Asi state[22]
+#define Aso state[23]
+#define Asu state[24]
+
+#else
+
+/* Use variables to stand for the in-process state array */
+    uint64_t Aba, Abe, Abi, Abo, Abu;
+    uint64_t Aga, Age, Agi, Ago, Agu;
+    uint64_t Aka, Ake, Aki, Ako, Aku;
+    uint64_t Ama, Ame, Ami, Amo, Amu;
+    uint64_t Asa, Ase, Asi, Aso, Asu;
 
     // copyFromState(A, state)
     Aba = state[0];
@@ -83,6 +139,7 @@ static void KeccakF1600_StatePermute(uint64_t *state) {
     Asi = state[22];
     Aso = state[23];
     Asu = state[24];
+#endif
 
     for (round = 0; round < NROUNDS; round += 2) {
         //    prepareTheta
@@ -276,6 +333,7 @@ static void KeccakF1600_StatePermute(uint64_t *state) {
         Asu = BCu ^ ((~BCa) & BCe);
     }
 
+#if TS_SHAKE256_OPT != 1
     // copyToState(state, A)
     state[0] = Aba;
     state[1] = Abe;
@@ -302,7 +360,73 @@ static void KeccakF1600_StatePermute(uint64_t *state) {
     state[22] = Asi;
     state[23] = Aso;
     state[24] = Asu;
+#endif
 }
+#else /* TS_SHAKE256_OPT == 2 */
+
+/* Code from Markku-Juhani O. Saarinen <mjos@iki.fi> */
+/* Slower, but uses less RAM */
+static void KeccakF1600_StatePermute(uint64_t *st) {
+    // constants
+    static const uint64_t keccakf_rndc[NROUNDS] = {
+        0x0000000000000001, 0x0000000000008082, 0x800000000000808a,
+        0x8000000080008000, 0x000000000000808b, 0x0000000080000001,
+        0x8000000080008081, 0x8000000000008009, 0x000000000000008a,
+        0x0000000000000088, 0x0000000080008009, 0x000000008000000a,
+        0x000000008000808b, 0x800000000000008b, 0x8000000000008089,
+        0x8000000000008003, 0x8000000000008002, 0x8000000000000080,
+        0x000000000000800a, 0x800000008000000a, 0x8000000080008081,
+        0x8000000000008080, 0x0000000080000001, 0x8000000080008008
+    };
+    static const int keccakf_rotc[24] = {
+        1,  3,  6,  10, 15, 21, 28, 36, 45, 55, 2,  14,
+        27, 41, 56, 8,  25, 43, 62, 18, 39, 61, 20, 44
+    };
+    static const int keccakf_piln[24] = {
+        10, 7,  11, 17, 18, 3, 5,  16, 8,  21, 24, 4,
+        15, 23, 19, 13, 12, 2, 20, 14, 22, 9,  6,  1
+    };
+
+    // variables
+    int i, j, r;
+    uint64_t t, bc[5];
+
+    // actual iteration
+    for (r = 0; r < NROUNDS; r++) {
+
+        // Theta
+        for (i = 0; i < 5; i++)
+            bc[i] = st[i] ^ st[i + 5] ^ st[i + 10] ^ st[i + 15] ^ st[i + 20];
+
+        for (i = 0; i < 5; i++) {
+            t = bc[(i + 4) % 5] ^ ROL(bc[(i + 1) % 5], 1);
+            for (j = 0; j < 25; j += 5)
+                st[j + i] ^= t;
+        }
+
+        // Rho Pi
+        t = st[1];
+        for (i = 0; i < 24; i++) {
+            j = keccakf_piln[i];
+            bc[0] = st[j];
+            st[j] = ROL(t, keccakf_rotc[i]);
+            t = bc[0];
+        }
+
+        //  Chi
+        for (j = 0; j < 25; j += 5) {
+            for (i = 0; i < 5; i++)
+                bc[i] = st[j + i];
+            for (i = 0; i < 5; i++)
+                st[j + i] ^= (~bc[(i + 1) % 5]) & bc[(i + 2) % 5];
+        }
+
+        //  Iota
+        st[0] ^= keccakf_rndc[r];
+    }
+}
+
+#endif /* TS_SHAKE256_OPT */
 
 /*************************************************
  * Name:        keccak_inc_init
@@ -367,7 +491,7 @@ static void keccak_inc_absorb(SHAKE256_CTX* ctx, uint32_t r, const uint8_t *m,
  *
  * Description: Finalizes Keccak absorb phase, prepares for squeezing
  *
- * Arguments:   - uint64_t *s_inc: pointer to input/output incremental state
+ * Arguments:   - SHAKE256_CTX *ctx: pointer to input/output incremental state
  *                First 25 values represent Keccak state.
  *                26th value represents either the number of absorbed bytes
  *                that have not been permuted, or not-yet-squeezed bytes.
@@ -391,11 +515,11 @@ static void keccak_inc_finalize(SHAKE256_CTX *ctx, uint32_t r, uint8_t p) {
  *
  * Arguments:   - uint8_t *h: pointer to output bytes
  *              - size_t outlen: number of bytes to be squeezed
- *              - uint64_t *s_inc: pointer to input/output incremental state
+ *              - SHAKE256_CTX *ctx: pointer to input/output incremental state
  *                First 25 values represent Keccak state.
  *                26th value represents either the number of absorbed bytes
  *                that have not been permuted, or not-yet-squeezed bytes.
- *              - uint32_t r: rate in bytes (e.g., 168 for SHAKE128)
+ *              - uint32_t r: rate in bytes (e.g., 136 for SHAKE256)
  **************************************************/
 static void keccak_inc_squeeze(uint8_t *h, size_t outlen,
                                SHAKE256_CTX* ctx, uint32_t r) {
@@ -425,18 +549,21 @@ static void keccak_inc_squeeze(uint8_t *h, size_t outlen,
     }
 }
 
-void shake256_inc_init(SHAKE256_CTX *ctx) {
+/*
+ * These are the APIs into this file
+ */
+void ts_shake256_inc_init(SHAKE256_CTX *ctx) {
     keccak_inc_init(ctx->s);
 }
 
-void shake256_inc_absorb(SHAKE256_CTX *ctx, const uint8_t *input, size_t inlen) {
+void ts_shake256_inc_absorb(SHAKE256_CTX *ctx, const uint8_t *input, size_t inlen) {
     keccak_inc_absorb(ctx, SHAKE256_RATE, input, inlen);
 }
 
-void shake256_inc_finalize(SHAKE256_CTX* ctx) {
+void ts_shake256_inc_finalize(SHAKE256_CTX* ctx) {
     keccak_inc_finalize(ctx, SHAKE256_RATE, 0x1F);
 }
 
-void shake256_inc_squeeze(uint8_t *output, size_t outlen, SHAKE256_CTX* ctx) {
+void ts_shake256_inc_squeeze(uint8_t *output, size_t outlen, SHAKE256_CTX* ctx) {
     keccak_inc_squeeze(output, outlen, ctx, SHAKE256_RATE);
 }
