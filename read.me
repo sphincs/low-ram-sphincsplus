@@ -300,12 +300,12 @@ Utilities included with this package:
   - What's included in the RAM space measurement
       - The context structure, and any stack space used
   - What's not included
-      - The space for the public/private keys, the message being signed
-        and the space to hold the temporary outputs.
+      - The space for the public/private keys and the message being signed.
   In addition, the compiler I use is not careful about minimizing RAM
   space (as a handful of bytes of stack space is rarely an issue for high
-  performance CPUs); I would expect a compiler targeted toward an HSM CPU
-  would do somewhat better.
+  performance CPUs); in addition, values pushed onto the stack (return
+  addresses, saved registers) are 8 bytes each.  I would expect a compiler
+  targeted toward an HSM CPU would do somewhat better.
   And, TS_SHA2_OPTIMIZATION is turned off and TS_SHAKE256_OPT is set to 2
   (both to minimize the RAM usage as much as possible).
 
