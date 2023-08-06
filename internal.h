@@ -104,13 +104,28 @@ enum hash_reason {
 #define TREEINDEX_OFFSET        28
 #define TREEINDEX_SHA256_OFFSET 18
 
-/* Used internally by the signature, keygen and verify processes */
+/* Used internally by the signature and verify processes */
 void ts_set_up_wots_signature(struct ts_context *ctx, unsigned next_leaf);
 
 /* Used internally to convert message hashes into FORS/hypertree locations */
 void ts_convert_message_hash_to_hypertree_position(
 	                       struct ts_context *ctx,
 			       unsigned char *message_hash );
+
+/* Compute a wots leaf.  Used internally by the signature and keygen */
+/* processes */
+void ts_wots_leaf( unsigned char *output, int leaf_index,
+	               struct ts_context *ctx );
+
+/* Construct the next node in the authentication path (and compute the */
+/* running root).  Used internally by the signature and keygen */
+/* processes */
+void ts_merkle_path( void (*gen_leaf)(
+			        unsigned char *output, int leaf_index,
+			       	struct ts_context *ctx),
+	                 struct ts_context *ctx,
+	                 enum hash_reason typecode,
+			 unsigned char *stack);
 
 
 /* Routines to initialize the adr structure */

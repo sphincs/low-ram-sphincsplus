@@ -201,7 +201,7 @@ static void fors_leaf( unsigned char *output, int leaf_index,
  * This is used for both FORS and Merkle trees (distinguished by the
  * typecode parameter)
  */
-static void merkle_path( void (*gen_leaf)(
+void ts_merkle_path( void (*gen_leaf)(
 			        unsigned char *output, int leaf_index,
 			       	struct ts_context *ctx),
 	                 struct ts_context *ctx,
@@ -416,7 +416,7 @@ static void generate_next_wots_hash(struct ts_context *ctx) {
 /*
  * Compute a leaf of a Merkle tree (which is a WOTS public key)
  */
-static void wots_leaf( unsigned char *output, int leaf_index,
+void ts_wots_leaf( unsigned char *output, int leaf_index,
 	               struct ts_context *ctx ) {
     ts_set_wots_header_adr( leaf_index, ctx );
     ctx->ps->init_t( &ctx->big_iter, ctx );
@@ -479,7 +479,7 @@ unsigned ts_sign( unsigned char *dest, unsigned m,
 	    }
 	case ts_fors: {
             /* Generate the next node in the FORS Merkle path */
-	    merkle_path( fors_leaf, ctx, ADR_TYPE_FORSTREE,
+	    ts_merkle_path( fors_leaf, ctx, ADR_TYPE_FORSTREE,
 			 ctx->x.fors.stack );
 	    if (ctx->merkle_level == ctx->ps->t) {
 		 /* We hit the top of the FORS tree */
@@ -506,14 +506,14 @@ unsigned ts_sign( unsigned char *dest, unsigned m,
 		/* We've generated all the WOTS digits */
                 ctx->state = ts_merkle;
                 ctx->merkle_level = 0;
-	        wots_leaf( ctx->auth_path_buffer, ctx->auth_path_node,
+	        ts_wots_leaf( ctx->auth_path_buffer, ctx->auth_path_node,
 			   ctx );
 	    }
 	    continue;
 	}
 	case ts_merkle: {  /* The next value is from a Merkle signature */
             /* Generate the next node in the Merkle path */
-	    merkle_path( wots_leaf, ctx, ADR_TYPE_HASHTREE,
+	    ts_merkle_path( ts_wots_leaf, ctx, ADR_TYPE_HASHTREE,
 			 ctx->x.merkle.stack );
 	    if (ctx->merkle_level == ctx->ps->merkle_h) {
 		 /* We hit the top of the Merkle tree */

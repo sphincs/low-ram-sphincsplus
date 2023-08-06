@@ -41,23 +41,21 @@ int ts_gen_key( unsigned char *private_key,
     ctx.hypertree_level = ps->d - 1; /* We're at the top of the hypertree */
     ctx.tree_address = 0;  /* The top of the hypertree has tree address 0 */ 
     ctx.auth_path_node = 0; /* Actually, we don't care which leaf we use */
-    ts_set_up_wots_signature(&ctx, 0);
+    ctx.merkle_level = 0;
 
     /*
-     * Generate the top tree Merkle signature (using the space for the root
-     * as the buffer - it's not being used yet).  As a side effect
-     * (actually, the part we care about), this will compute the root, and
-     * place it into ctx.auth_path_buffer
+     * Generate the top level Merkle tree; we perform the same logic that
+     * the signing process does, using the fact that ts_merkle_path
+     * keeps the root of the subtree computed so far in auth_path_buffer
      */
-    for (;;) {
-        if (0 == ts_sign( CONVERT_PUBLIC_KEY_TO_ROOT(pub, n),
-			  n, &ctx )) {
-	    /* We finished computing the top level signature */
-	    break;
-	}
+    ts_wots_leaf( ctx.auth_path_buffer, ctx.auth_path_node, &ctx );
+    for (int i=0; i<ps->merkle_h; i++) {
+        ts_merkle_path( ts_wots_leaf, &ctx, ADR_TYPE_HASHTREE,
+                     ctx.x.merkle.stack );
     }
 
-    /* The root is in auth_path_buffer; copy it to its place in the key */
+    /* The top level root is in auth_path_buffer; that's the root of the */
+    /* entire Sphincs+ hypertree.  Copy it to its place in the key */
     memcpy( CONVERT_PUBLIC_KEY_TO_ROOT(pub, n),
 	    ctx.auth_path_buffer, n );
 

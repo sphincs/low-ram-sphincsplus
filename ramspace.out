@@ -1,18 +1,18 @@
 This file lists the amount of RAM used by the tiny sphincs package
 
 Parameter Set           CTX size  Keygen size  Sig size  Ver size
-ts_ps_sha2_128f_simple     472      1072         1024       992
-ts_ps_sha2_128s_simple     568      1168         1120      1088
-ts_ps_sha2_192f_simple     768      1392         1456      1408
-ts_ps_sha2_192s_simple     912      1536         1600      1552
-ts_ps_sha2_256f_simple     872      1504         1568      1536
-ts_ps_sha2_256s_simple    1032      1664         1728      1696
-ts_ps_shake_128f_simple    672      1200         1120       928
-ts_ps_shake_128s_simple    768      1296         1216      1024
-ts_ps_shake_192f_simple    776      1312         1232      1040
-ts_ps_shake_192s_simple    920      1456         1376      1184
-ts_ps_shake_256f_simple    880      1408         1328      1136
-ts_ps_shake_256s_simple   1040      1568         1488      1296
+ts_ps_sha2_128f_simple     472       976         1024       992
+ts_ps_sha2_128s_simple     568      1072         1120      1088
+ts_ps_sha2_192f_simple     768      1296         1456      1408
+ts_ps_sha2_192s_simple     912      1440         1600      1552
+ts_ps_sha2_256f_simple     872      1408         1568      1536
+ts_ps_sha2_256s_simple    1032      1568         1728      1696
+ts_ps_shake_128f_simple    672      1104         1120       928
+ts_ps_shake_128s_simple    768      1200         1216      1024
+ts_ps_shake_192f_simple    776      1216         1232      1040
+ts_ps_shake_192s_simple    920      1360         1376      1184
+ts_ps_shake_256f_simple    880      1312         1328      1136
+ts_ps_shake_256s_simple   1040      1472         1488      1296
 
 Legend:
 Parameter Set - the Sphincs+ parameter set being tested.  Each test used a minimal tune.h to enable the named parameter set
