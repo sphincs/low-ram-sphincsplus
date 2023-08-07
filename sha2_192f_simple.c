@@ -11,7 +11,7 @@ const struct ts_parameter_set ts_ps_sha2_192f_simple = {
     66,                /* Hypertree height */
     22,                /* # of levels of Merkle trees */
     3,                 /* Height of each Merkle tree = h/d */
-    1,                 /* This is a SHA-256 parameter set */
+    1,                 /* This is a SHA-2 parameter set */
 
     ts_sha2_L35_prf_msg, /* prf_msg */
     ts_sha2_L35_hash_msg, /* hash_msg */

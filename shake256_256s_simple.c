@@ -11,7 +11,7 @@ const struct ts_parameter_set ts_ps_shake_256s_simple = {
     64,                /* Hypertree height */
     8,                 /* # of levels of Merkle trees */
     8,                 /* Height of each Merkle tree = h/d */
-    0,                 /* This is not a SHA-256 parameter set */
+    0,                 /* This is not a SHA-2 parameter set */
 
     ts_shake256_prf_msg, /* prf_msg */
     ts_shake256_hash_msg, /* hash_msg */

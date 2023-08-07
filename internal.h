@@ -22,9 +22,10 @@ struct ts_parameter_set {
     unsigned char h;   /* Hypertree height */
     unsigned char d;   /* # of levels of Merkle trees */
     unsigned char merkle_h; /* Height of each Merkle tree = h/d */
-    unsigned char sha256; /* Set if this is a SHA256 parameter set */
+    unsigned char sha2; /* Set if this is a SHA2 parameter set */
 
-	/* The parameter-set specific functions */
+	/* The parameter-set specific functions, that is, the H_msg, PRF, */
+        /* PRF_msg, F, H and T functions defined within the Sphincs+ spec */
 	/* All these functions assume that the adr structure within the */
 	/* ts_context structure has been set up */
     void (*prf_msg)( unsigned char *output, const unsigned char *opt_buffer,
@@ -86,25 +87,28 @@ enum hash_reason {
 
 #define MAX_MESSAGE_HASH 49 /* Maximum number of bytes we need from */
                             /* hash_msg.  There's no strong need to tune */
-			    /* this to the parameter set */
+			    /* this to the parameter set, as it doesn't */
+                            /* affect the maximum RAM used */
 #define SHA2_ADR_SIZE    22 /* SHA2 uses a compressed format */
 
 /* The offsets of various fields within the ADR structure (both for */
-/* standard and the compressed SHA256 version */
+/* standard and the compressed SHA2 version */
 #define LAYER_OFFSET             0
-#define LAYER_SHA256_OFFSET      0
+#define LAYER_SHA2_OFFSET        0
 #define TREE_OFFSET              4
-#define TREE_SHA256_OFFSET       1
+#define TREE_SHA2_OFFSET         1
 #define TYPE_OFFSET             16
-#define TYPE_SHA256_OFFSET       9
+#define TYPE_SHA2_OFFSET         9
 #define KEYPAIR_OFFSET          20
-#define KEYPAIR_SHA256_OFFSET   10
+#define KEYPAIR_SHA2_OFFSET     10
 #define TREEHEIGHT_OFFSET       24
-#define TREEHEIGHT_SHA256_OFFSET 14
+#define TREEHEIGHT_SHA2_OFFSET  14
 #define TREEINDEX_OFFSET        28
-#define TREEINDEX_SHA256_OFFSET 18
+#define TREEINDEX_SHA2_OFFSET   18
 
 /* Used internally by the signature and verify processes */
+/* This sets of the context to be ready to start performing WOTS hash */
+/* chain computations (in both the siggen and verify directions) */
 void ts_set_up_wots_signature(struct ts_context *ctx, unsigned next_leaf);
 
 /* Used internally to convert message hashes into FORS/hypertree locations */
@@ -128,7 +132,8 @@ void ts_merkle_path( void (*gen_leaf)(
 			 unsigned char *stack);
 
 
-/* Routines to initialize the adr structure */
+/* Routines to initialize values in the adr structure.  Appropriate */
+/* for both SHA2 and SHAKE parameter sets */
 void ts_set_fors_root_adr(struct ts_context *ctx);
 void ts_set_fors_leaf_adr(struct ts_context *ctx, int leaf_index );
 void ts_set_wots_header_adr(unsigned merkle_leaf, struct ts_context *ctx);

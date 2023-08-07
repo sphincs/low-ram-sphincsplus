@@ -19,11 +19,11 @@ static uint64_t extract_int_from_hash( const unsigned char *hash,
 
 /*
  * These are routines to set various fields in the ADR structure
- * These handle both the standard and SHA256 versions of that structure
+ * These handle both the standard and SHA2 versions of that structure
  */
 static void set_layer_adr( unsigned layer, struct ts_context *ctx ) {
-    if (!TS_SUPPORT_SHAKE || ctx->ps->sha256) {
-	ctx->adr[ LAYER_SHA256_OFFSET ] = layer;
+    if (!TS_SUPPORT_SHAKE || ctx->ps->sha2) {
+	ctx->adr[ LAYER_SHA2_OFFSET ] = layer;
     } else {
 	ts_ull_to_bytes( &ctx->adr[ LAYER_OFFSET ], layer, 4 );
     }
@@ -31,8 +31,8 @@ static void set_layer_adr( unsigned layer, struct ts_context *ctx ) {
 
 static void set_tree_adr( unsigned long long tree,
 	                   struct ts_context *ctx ) {
-    if (!TS_SUPPORT_SHAKE || ctx->ps->sha256) {
-	ts_ull_to_bytes( &ctx->adr[ TREE_SHA256_OFFSET ], tree, 8 );
+    if (!TS_SUPPORT_SHAKE || ctx->ps->sha2) {
+	ts_ull_to_bytes( &ctx->adr[ TREE_SHA2_OFFSET ], tree, 8 );
     } else {
 	ts_ull_to_bytes( &ctx->adr[ TREE_OFFSET ], tree, 12 );
     }
@@ -40,8 +40,8 @@ static void set_tree_adr( unsigned long long tree,
 
 static void set_type_adr( unsigned type,
 	                  struct ts_context *ctx ) {
-    if (!TS_SUPPORT_SHAKE || ctx->ps->sha256) {
-	ctx->adr[ TYPE_SHA256_OFFSET ] = type;
+    if (!TS_SUPPORT_SHAKE || ctx->ps->sha2) {
+	ctx->adr[ TYPE_SHA2_OFFSET ] = type;
     } else {
 	ts_ull_to_bytes( &ctx->adr[ TYPE_OFFSET ], type, 4 );
     }
@@ -49,8 +49,8 @@ static void set_type_adr( unsigned type,
 
 static void set_keypair_adr( unsigned keypair,
 	                   struct ts_context *ctx ) {
-    if (!TS_SUPPORT_SHAKE || ctx->ps->sha256) {
-	ts_ull_to_bytes( &ctx->adr[ KEYPAIR_SHA256_OFFSET ], keypair, 4 );
+    if (!TS_SUPPORT_SHAKE || ctx->ps->sha2) {
+	ts_ull_to_bytes( &ctx->adr[ KEYPAIR_SHA2_OFFSET ], keypair, 4 );
     } else {
 	ts_ull_to_bytes( &ctx->adr[ KEYPAIR_OFFSET ], keypair, 4 );
     }
@@ -58,8 +58,8 @@ static void set_keypair_adr( unsigned keypair,
 
 static void set_tree_height_adr( unsigned tree_height,
 	                   struct ts_context *ctx ) {
-    if (!TS_SUPPORT_SHAKE || ctx->ps->sha256) {
-	ts_ull_to_bytes( &ctx->adr[ TREEHEIGHT_SHA256_OFFSET ], tree_height, 4 );
+    if (!TS_SUPPORT_SHAKE || ctx->ps->sha2) {
+	ts_ull_to_bytes( &ctx->adr[ TREEHEIGHT_SHA2_OFFSET ], tree_height, 4 );
     } else {
 	ts_ull_to_bytes( &ctx->adr[ TREEHEIGHT_OFFSET ], tree_height, 4 );
     }
@@ -68,8 +68,8 @@ static void set_tree_height_adr( unsigned tree_height,
 
 static void set_tree_index_adr( unsigned tree_index,
 	                   struct ts_context *ctx ) {
-    if (!TS_SUPPORT_SHAKE || ctx->ps->sha256) {
-	ts_ull_to_bytes( &ctx->adr[ TREEINDEX_SHA256_OFFSET ], tree_index, 4 );
+    if (!TS_SUPPORT_SHAKE || ctx->ps->sha2) {
+	ts_ull_to_bytes( &ctx->adr[ TREEINDEX_SHA2_OFFSET ], tree_index, 4 );
     } else {
 	ts_ull_to_bytes( &ctx->adr[ TREEINDEX_OFFSET ], tree_index, 4 );
     }
