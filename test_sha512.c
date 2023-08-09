@@ -26,16 +26,16 @@ static int test( const unsigned char *expected_result,
     SHA512_CTX ctx;
 
     for (unsigned n = 1; n <= len_message; n++) {
-        SHA512_init( &ctx );
+        ts_SHA512_init( &ctx );
 
         for (unsigned j=0; j<len_message; j+=n) {
             unsigned this_len = len_message - j;
             if (this_len > n) this_len = n;
-            SHA512_update( &ctx, &message[j], this_len );
+            ts_SHA512_update( &ctx, &message[j], this_len );
         }
 
         unsigned char actual_result[ 64 ] = { 0 };
-        SHA512_final( actual_result, &ctx );
+        ts_SHA512_final( actual_result, &ctx );
         if (0 != memcmp( expected_result, actual_result, 64 )) {
             printf( "   *** HASH MISMATCH\n" );
             return 0;
@@ -46,9 +46,9 @@ static int test( const unsigned char *expected_result,
     for (int n=8; n<=64; n+=8) {
 	unsigned char actual_result[64] = { 0 };
 	memset( &ctx, n, sizeof ctx );  /* Fill the CTX with gibberish */
-        SHA512_init( &ctx );
-        SHA512_update( &ctx, message, len_message );
-        SHA512_final_trunc( actual_result, &ctx, n );
+        ts_SHA512_init( &ctx );
+        ts_SHA512_update( &ctx, message, len_message );
+        ts_SHA512_final_trunc( actual_result, &ctx, n );
         if (0 != memcmp( expected_result, actual_result, n )) {
             printf( "   *** HASH MISMATCH\n" );
             return 0;
@@ -63,17 +63,17 @@ static int test( const unsigned char *expected_result,
 
     /* Test the SHA512_save_state API */
     if (len_message >= 128) {
-        SHA512_init( &ctx );
-        SHA512_update( &ctx, message, 128 );
+        ts_SHA512_init( &ctx );
+        ts_SHA512_update( &ctx, message, 128 );
 	uint64_t save_state[8];
-        SHA512_save_state( save_state, &ctx );
+        ts_SHA512_save_state( save_state, &ctx );
 
         SHA512_CTX restore_ctx;
 	memset( &restore_ctx, 42, sizeof restore_ctx );
-        SHA512_restore_state_after_128( &restore_ctx, save_state );
-        SHA512_update( &restore_ctx, message+128, len_message-128 );
+        ts_SHA512_restore_state_after_128( &restore_ctx, save_state );
+        ts_SHA512_update( &restore_ctx, message+128, len_message-128 );
 	unsigned char actual_result[64] = { 0 };
-        SHA512_final( actual_result, &restore_ctx );
+        ts_SHA512_final( actual_result, &restore_ctx );
         if (0 != memcmp( expected_result, actual_result, 64 )) {
             printf( "   *** HASH MISMATCH\n" );
             return 0;

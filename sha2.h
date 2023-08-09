@@ -4,7 +4,7 @@
 /*
  * These are the prototypes for the SHA-256, SHA-512 implementations for
  * tiny sphincs.  Note that this implementation targets tiny space, rather
- * than high performance
+ * than high performance (although the performance shouldn't be that bad)
  */
 
 #include <stddef.h>
@@ -28,15 +28,19 @@ typedef struct SHA256_CTX {
     } x;
 } SHA256_CTX;
 
-void SHA256_init( SHA256_CTX *ctx );
-void SHA256_update( SHA256_CTX *ctx, const void *msg, uint64_t count );
-void SHA256_final( unsigned char *digest, SHA256_CTX *ctx );
+/* The standard init-update-final API for SHA-256 */
+void ts_SHA256_init( SHA256_CTX *ctx );
+void ts_SHA256_update( SHA256_CTX *ctx, const void *msg, uint64_t count );
+void ts_SHA256_final( unsigned char *digest, SHA256_CTX *ctx );
 
-/* Output the first n bytes of the SHA256.  We assume that n is a multiple */
-/* of 4 no more than 32 */
-void SHA256_final_trunc( unsigned char *digest, SHA256_CTX *ctx, unsigned n );
-void SHA256_save_state( uint32_t *s, const SHA256_CTX *ctx );
-void SHA256_restore_state_after_64( SHA256_CTX *ctx, const uint32_t *s );
+/* The finaize API to SHA256, except it outputs only the first n bytes. */
+/* We assume that n is a multiple of 4 no more than 32 */
+void ts_SHA256_final_trunc( unsigned char *digest, SHA256_CTX *ctx, unsigned n );
+
+/* API that compute the hash state after an input of 64 bytes, and restores */
+/* that state (so we can continue wiht the update/final APIs */
+void ts_SHA256_save_state( uint32_t *s, const SHA256_CTX *ctx );
+void ts_SHA256_restore_state_after_64( SHA256_CTX *ctx, const uint32_t *s );
 
 
 
@@ -57,14 +61,18 @@ typedef struct SHA512_CTX {
     } x;
 } SHA512_CTX;
 
-void SHA512_init( SHA512_CTX *ctx );
-void SHA512_update( SHA512_CTX *ctx, const void *msg, uint64_t count );
-void SHA512_final( unsigned char *digest, SHA512_CTX *ctx );
+/* The standard init-update-final API for SHA-512 */
+void ts_SHA512_init( SHA512_CTX *ctx );
+void ts_SHA512_update( SHA512_CTX *ctx, const void *msg, uint64_t count );
+void ts_SHA512_final( unsigned char *digest, SHA512_CTX *ctx );
 
-/* Output the first n bytes of the SHA512.  We assume that n is a */
-/* multiple of 8 no more than 64 */
-void SHA512_final_trunc( unsigned char *digest, SHA512_CTX *ctx, unsigned n );
-void SHA512_save_state( uint64_t *s, const SHA512_CTX *ctx );
-void SHA512_restore_state_after_128( SHA512_CTX *ctx, const uint64_t *s );
+/* The finaize API to SHA512, except it outputs only the first n bytes. */
+/* We assume that n is a multiple of 8 no more than 64 */
+void ts_SHA512_final_trunc( unsigned char *digest, SHA512_CTX *ctx, unsigned n );
+
+/* API that compute the hash state after an input of 128 bytes, and restores */
+/* that state (so we can continue wiht the update/final APIs */
+void ts_SHA512_save_state( uint64_t *s, const SHA512_CTX *ctx );
+void ts_SHA512_restore_state_after_128( SHA512_CTX *ctx, const uint64_t *s );
 
 #endif /* SHA2_H_ */

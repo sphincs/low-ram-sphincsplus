@@ -124,7 +124,7 @@ static void sha512_compress (SHA512_CTX * ctx, const void *buf) {
     }
 }
 
-void SHA512_init (SHA512_CTX *ctx)
+void ts_SHA512_init (SHA512_CTX *ctx)
 {
     ctx->state[0] = 0x6a09e667f3bcc908ULL;
     ctx->state[1] = 0xbb67ae8584caa73bULL;
@@ -139,7 +139,7 @@ void SHA512_init (SHA512_CTX *ctx)
     ctx->in_buffer = 0;
 }
 
-void SHA512_update( SHA512_CTX *ctx, const void *src, uint64_t input_count ) {
+void ts_SHA512_update( SHA512_CTX *ctx, const void *src, uint64_t input_count ) {
     const unsigned char *p = (const unsigned char *)src;
     ctx->count += 8 * input_count;
 
@@ -172,23 +172,23 @@ void SHA512_update( SHA512_CTX *ctx, const void *src, uint64_t input_count ) {
 /*
  * Add padding and return the message digest.
  */
-void SHA512_final( unsigned char *digest, SHA512_CTX *ctx ) {
-    SHA512_final_trunc( digest, ctx, 64 );
+void ts_SHA512_final( unsigned char *digest, SHA512_CTX *ctx ) {
+    ts_SHA512_final_trunc( digest, ctx, 64 );
 }
 
-void SHA512_final_trunc( unsigned char *digest, SHA512_CTX *ctx, unsigned n ) {
+void ts_SHA512_final_trunc( unsigned char *digest, SHA512_CTX *ctx, unsigned n ) {
     unsigned char finalcount[SHA512_FINALCOUNT_SIZE];
 
     ts_ull_to_bytes(finalcount, ctx->count, SHA512_FINALCOUNT_SIZE);
 
-    SHA512_update(ctx, "\200", 1);
+    ts_SHA512_update(ctx, "\200", 1);
 
     if (ctx->in_buffer > 112) {
-        SHA512_update(ctx, "\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0", 16);
+        ts_SHA512_update(ctx, "\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0", 16);
     }
     memset( ctx->x.data + ctx->in_buffer, 0, 112 - ctx->in_buffer );
     ctx->in_buffer = 112;
-    SHA512_update(ctx, finalcount, SHA512_FINALCOUNT_SIZE);  /* Should cause a compress */
+    ts_SHA512_update(ctx, finalcount, SHA512_FINALCOUNT_SIZE);  /* Should cause a compress */
 
     /*
      * The final state is an array of uint64_t's; place them as a series
@@ -199,13 +199,13 @@ void SHA512_final_trunc( unsigned char *digest, SHA512_CTX *ctx, unsigned n ) {
     }
 }
 
-void SHA512_save_state( uint64_t *s, const SHA512_CTX *ctx ) {
+void ts_SHA512_save_state( uint64_t *s, const SHA512_CTX *ctx ) {
     for (unsigned i=0; i<8; i++) {
 	s[i] = ctx->state[i];
     }
 }
 
-void SHA512_restore_state_after_128( SHA512_CTX *ctx, const uint64_t *s ) {
+void ts_SHA512_restore_state_after_128( SHA512_CTX *ctx, const uint64_t *s ) {
     for (unsigned i=0; i<8; i++) {
 	ctx->state[i] = s[i];
     }

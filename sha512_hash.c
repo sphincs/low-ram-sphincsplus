@@ -18,25 +18,25 @@ void ts_sha2_L35_prf_msg( unsigned char *output,
     unsigned char hash_output[64];
 
     /* Do the inner hash */
-    SHA512_init( ctx );
+    ts_SHA512_init( ctx );
     for (unsigned i=0; i<n; i++) {
 	block[i] = 0x36 ^ CONVERT_PUBLIC_KEY_TO_PRF(public_key, n)[i];
     }
     memset( &block[n], 0x36, sha512_block_size-n );
-    SHA512_update( ctx, block, sha512_block_size );
-    SHA512_update( ctx, opt_buffer, n );
-    SHA512_update( ctx, message, len_message );
-    SHA512_final( hash_output, ctx );
+    ts_SHA512_update( ctx, block, sha512_block_size );
+    ts_SHA512_update( ctx, opt_buffer, n );
+    ts_SHA512_update( ctx, message, len_message );
+    ts_SHA512_final( hash_output, ctx );
 
     /* Do the outer hash */
-    SHA512_init( ctx );
+    ts_SHA512_init( ctx );
     for (unsigned i=0; i<n; i++) {
 	block[i] = 0x5c ^ CONVERT_PUBLIC_KEY_TO_PRF(public_key, n)[i];
     }
     memset( &block[n], 0x5c, sha512_block_size-n );
-    SHA512_update( ctx, block, sha512_block_size );
-    SHA512_update( ctx, hash_output, 64 );
-    SHA512_final_trunc( output, ctx, n );
+    ts_SHA512_update( ctx, block, sha512_block_size );
+    ts_SHA512_update( ctx, hash_output, 64 );
+    ts_SHA512_final_trunc( output, ctx, n );
 }
 
 void ts_sha2_L35_hash_msg( unsigned char *output, size_t len_output,
@@ -47,12 +47,12 @@ void ts_sha2_L35_hash_msg( unsigned char *output, size_t len_output,
     const unsigned char *public_key = sc->public_key;
     SHA512_CTX *ctx = &sc->small_iter.sha2_L35_simple;
     unsigned char msg_hash[2*TS_MAX_HASH + 64 + 4];
-    SHA512_init( ctx );
-    SHA512_update( ctx, randomness, n );
-    SHA512_update( ctx, CONVERT_PUBLIC_KEY_TO_PUB_SEED(public_key, n), n );
-    SHA512_update( ctx, CONVERT_PUBLIC_KEY_TO_ROOT(public_key, n), n );
-    SHA512_update( ctx, message, len_message );
-    SHA512_final( &msg_hash[2*n], ctx );
+    ts_SHA512_init( ctx );
+    ts_SHA512_update( ctx, randomness, n );
+    ts_SHA512_update( ctx, CONVERT_PUBLIC_KEY_TO_PUB_SEED(public_key, n), n );
+    ts_SHA512_update( ctx, CONVERT_PUBLIC_KEY_TO_ROOT(public_key, n), n );
+    ts_SHA512_update( ctx, message, len_message );
+    ts_SHA512_final( &msg_hash[2*n], ctx );
 
     /* Now do the outer MGF1 */
     memcpy( &msg_hash[0], randomness, n );
@@ -60,10 +60,10 @@ void ts_sha2_L35_hash_msg( unsigned char *output, size_t len_output,
 
     for (int i=0; len_output; i++) {
         ts_ull_to_bytes(&msg_hash[2*n+64], i, 4);
-        SHA512_init( ctx );
-        SHA512_update( ctx, msg_hash, 2*n+64+4 );
+        ts_SHA512_init( ctx );
+        ts_SHA512_update( ctx, msg_hash, 2*n+64+4 );
 	unsigned char buffer[64];
-	SHA512_final( buffer, ctx );
+	ts_SHA512_final( buffer, ctx );
 	unsigned bytes;
         if (len_output >= 64) {
 	    bytes = 64;
@@ -79,15 +79,15 @@ void ts_sha2_L35_hash_msg( unsigned char *output, size_t len_output,
 void ts_sha512_init_ctx( SHA512_CTX *ctx,
 		     struct ts_context *sc ) {
 #if TS_SHA2_OPTIMIZATION
-    SHA512_restore_state_after_128( ctx, sc->prehash_sha512 );
+    ts_SHA512_restore_state_after_128( ctx, sc->prehash_sha512 );
 #else
-    SHA512_init( ctx );
+    ts_SHA512_init( ctx );
 
     int n = sc->ps->n;
-    SHA512_update( ctx, CONVERT_PUBLIC_KEY_TO_PUB_SEED(sc->public_key, n), n );
+    ts_SHA512_update( ctx, CONVERT_PUBLIC_KEY_TO_PUB_SEED(sc->public_key, n), n );
 
     for (int i = n; i < sha512_block_size; i++) {
-        SHA512_update( ctx, "\0", 1 );
+        ts_SHA512_update( ctx, "\0", 1 );
     }
 #endif
 }

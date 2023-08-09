@@ -146,7 +146,7 @@ int test_testvector(int fast_flag, enum noise_level level) {
         ts_init_sign( &ctx, message, sizeof message, ps,
 		      private_key, optrand_rng );
         SHA256_CTX hash_ctx;
-        SHA256_init( &hash_ctx );
+        ts_SHA256_init( &hash_ctx );
 
 	/* And, while we're doing that, verify the signature - no reason not */
 	/* to test the verify logic at the same time */
@@ -162,7 +162,7 @@ int test_testvector(int fast_flag, enum noise_level level) {
 	    if (n == 0) break;   /* Hit the end of the signature */
 
 	        /* Include what we got in the hash */
-            SHA256_update( &hash_ctx, buffer, n );
+            ts_SHA256_update( &hash_ctx, buffer, n );
 
 	        /* And pass it to the verifier */
 	    if (1 != ts_update_verify( buffer, n, &verify_ctx )) {
@@ -174,7 +174,7 @@ int test_testvector(int fast_flag, enum noise_level level) {
 
 	    /* And create the hash of all those signature pieces */
         unsigned char hash[32];
-        SHA256_final( hash, &hash_ctx );
+        ts_SHA256_final( hash, &hash_ctx );
 
         /* Check if we got the expected hash */
         if (0 != memcmp( v->hash_sig, hash, 32 )) {

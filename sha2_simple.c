@@ -12,10 +12,10 @@ void ts_sha2_f_simple( unsigned char *output,
     int n = sc->ps->n;
     ts_sha256_init_ctx( ctx, sc );
 
-    SHA256_update( ctx, sc->adr, SHA2_ADR_SIZE );
-    SHA256_update( ctx, inblock, n );
+    ts_SHA256_update( ctx, sc->adr, SHA2_ADR_SIZE );
+    ts_SHA256_update( ctx, inblock, n );
 
-    SHA256_final_trunc( output, ctx, n );
+    ts_SHA256_final_trunc( output, ctx, n );
 }
 
 #endif

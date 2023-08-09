@@ -107,7 +107,7 @@ static void compress( SHA256_CTX *ctx, const void *buf ) {
     ctx->h[7] += S7;
 }
 
-void SHA256_init( SHA256_CTX *ctx ) {
+void ts_SHA256_init( SHA256_CTX *ctx ) {
     ctx->count = 0;
     ctx->num = 0;
     ctx->h[0] = 0x6A09E667UL;
@@ -120,7 +120,7 @@ void SHA256_init( SHA256_CTX *ctx ) {
     ctx->h[7] = 0x5BE0CD19UL;
 }
 
-void SHA256_update( SHA256_CTX *ctx, const void *src, uint64_t input_count ) {
+void ts_SHA256_update( SHA256_CTX *ctx, const void *src, uint64_t input_count ) {
     const unsigned char *p = (const unsigned char *)src;
     ctx->count += 8 * input_count;
 
@@ -153,23 +153,23 @@ void SHA256_update( SHA256_CTX *ctx, const void *src, uint64_t input_count ) {
 /*
  * Add padding and return the message digest.
  */
-void SHA256_final( unsigned char *digest, SHA256_CTX *ctx ) {
-    SHA256_final_trunc( digest, ctx, 32 );
+void ts_SHA256_final( unsigned char *digest, SHA256_CTX *ctx ) {
+    ts_SHA256_final_trunc( digest, ctx, 32 );
 }
 
-void SHA256_final_trunc( unsigned char *digest, SHA256_CTX *ctx, unsigned n ) {
+void ts_SHA256_final_trunc( unsigned char *digest, SHA256_CTX *ctx, unsigned n ) {
     unsigned char finalcount[SHA256_FINALCOUNT_SIZE];
 
     ts_ull_to_bytes(finalcount, ctx->count, SHA256_FINALCOUNT_SIZE);
 
-    SHA256_update(ctx, "\200", 1);
+    ts_SHA256_update(ctx, "\200", 1);
 
     if (ctx->num > 56) {
-        SHA256_update(ctx, "\0\0\0\0\0\0\0\0", 8);
+        ts_SHA256_update(ctx, "\0\0\0\0\0\0\0\0", 8);
     }
     memset( ctx->x.data + ctx->num, 0, 56 - ctx->num );
     ctx->num = 56;
-    SHA256_update(ctx, finalcount, SHA256_FINALCOUNT_SIZE);  /* Should cause a compress */
+    ts_SHA256_update(ctx, finalcount, SHA256_FINALCOUNT_SIZE);  /* Should cause a compress */
 
     /*
      * The final state is an array of uint32_t's; place them as a series
@@ -180,13 +180,13 @@ void SHA256_final_trunc( unsigned char *digest, SHA256_CTX *ctx, unsigned n ) {
     }
 }
 
-void SHA256_save_state( uint32_t *s, const SHA256_CTX *ctx ) {
+void ts_SHA256_save_state( uint32_t *s, const SHA256_CTX *ctx ) {
     for (unsigned i=0; i<8; i++) {
 	s[i] = ctx->h[i];
     }
 }
 
-void SHA256_restore_state_after_64( SHA256_CTX *ctx, const uint32_t *s ) {
+void ts_SHA256_restore_state_after_64( SHA256_CTX *ctx, const uint32_t *s ) {
     for (unsigned i=0; i<8; i++) {
 	ctx->h[i] = s[i];
     }
