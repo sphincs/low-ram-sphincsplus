@@ -1,3 +1,9 @@
+/*
+ * This is the implementation of the PRF_msg and the H_msg for the
+ * SHA2 L1 parameter sets.  For SHA2 L3, L5 parameter sets, these
+ * functions use SHA-512, and so they're in a different file
+ */
+
 #include "sha2_func.h"
 #include "sha2.h"
 #include "internal.h"
@@ -15,7 +21,10 @@ void ts_sha2_L1_prf_msg( unsigned char *output,
     const unsigned char *public_key = sc->public_key;
     SHA256_CTX *ctx = &sc->small_iter.sha2_L1_simple;
     unsigned char block[sha256_block_size];
-    unsigned char hash_output[32];
+    unsigned char hash_output[32];  /* This holds the entire inner hash, even if */
+	                            /* n < 32.  That's because we're during a */
+	                            /* truncated HMAC based on SHA256, not an */
+	                            /* HMAC based on a truncated SHA256 */
 
     /* Do the inner hash */
     ts_SHA256_init( ctx );
@@ -62,6 +71,12 @@ void ts_sha2_L1_hash_msg( unsigned char *output, size_t len_output,
         ts_ull_to_bytes(&msg_hash[2*n+32], i, 4);
         ts_SHA256_init( ctx );
         ts_SHA256_update( ctx, msg_hash, 2*n+32+4 );
+
+	    /* Why do we use an intermediate buffer, rather than directly */
+	    /* outputing to output using ts_SHA256_final_trunc?  Because */
+	    /* len_output might not be a multiple of 4 (and we're not */
+	    /* actually on the critical path for stack space, so it's */
+	    /* not that big of an issue) */
 	unsigned char buffer[32];
 	ts_SHA256_final( buffer, ctx );
 	unsigned bytes;
