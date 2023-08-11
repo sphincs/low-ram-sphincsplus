@@ -1,3 +1,9 @@
+/*
+ * This file contains the functions that are common to all SHA2
+ * parameter sets, namely the PRF function and the function to start
+ * a SHA-256 hash with the common prefix
+ */
+
 #include "sha2_func.h"
 #include "sha2.h"
 #include "internal.h"
@@ -7,6 +13,9 @@
 
 #if TS_SUPPORT_SHA2
 
+/*
+ * This computes the PRF function for SHA2 parameter sets
+ */
 void ts_sha2_prf( unsigned char *output,
 		     struct ts_context *sc ) {
     int n = sc->ps->n;
@@ -19,11 +28,21 @@ void ts_sha2_prf( unsigned char *output,
     ts_SHA256_final_trunc( output, ctx, n );
 }
 
+/*
+ * This initialized the SHA-256 context, and sets it up as having hashed
+ * the 64 byte sequence <public seed> || 00 ||00 || ... || 00
+ */
 void ts_sha256_init_ctx( SHA256_CTX *ctx,
 		     struct ts_context *sc ) {
 #if TS_SHA2_OPTIMIZATION
+    /*
+     * We have that SHA-256 state precomputed, use that
+     */
     ts_SHA256_restore_state_after_64( ctx, sc->prehash_sha256 );
 #else
+    /*
+     * Initialize the context and hash that sequence manually
+     */
     ts_SHA256_init( ctx );
 
     int n = sc->ps->n;
