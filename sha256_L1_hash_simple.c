@@ -25,6 +25,7 @@
 #if TS_SUPPORT_SHA2
 
 /* This starts the evaluation of the T function */
+/* It uses 't' to store the state of the evaluation */
 void ts_sha2_L1_init_t_simple( union t_iterator *t,
 		     struct ts_context *ctx ) {
     ts_sha256_init_ctx( &t->sha2_L1_simple, ctx );
