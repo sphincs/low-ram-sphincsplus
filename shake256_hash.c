@@ -1,3 +1,8 @@
+/*
+ * This file contains the functions that are common to all SHAKE
+ * parameter sets, namely the PRF_msg, HASH_msg and PRF functions
+ */
+
 #include "internal.h"
 #include "shake256_func.h"
 #include "fips202.h"
@@ -6,6 +11,9 @@
 
 #if TS_SUPPORT_SHAKE
 
+/*
+ * This computes the PRF_msg function for SHAKE parameter sets
+ */
 void ts_shake256_prf_msg( unsigned char *output,
 	             const unsigned char *opt_rand,
 		     const unsigned char *message, size_t len_message,
@@ -23,6 +31,9 @@ void ts_shake256_prf_msg( unsigned char *output,
     ts_shake256_inc_squeeze(output, n, ctx);
 }
 
+/*
+ * This computes the HASH_msg function for SHAKE parameter sets
+ */
 void ts_shake256_hash_msg( unsigned char *output, size_t len_output,
 		     const unsigned char *randomness,
 		     const unsigned char *message, size_t len_message,
@@ -46,6 +57,9 @@ void ts_shake256_hash_msg( unsigned char *output, size_t len_output,
     ts_shake256_inc_squeeze(output, len_output, ctx);
 }
 
+/*
+ * This computes the PRF function for SHAKE parameter sets
+ */
 void ts_shake256_prf( unsigned char *output,
 		     struct ts_context *sc ) {
     int n = sc->ps->n;
