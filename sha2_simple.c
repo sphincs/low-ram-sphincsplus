@@ -1,3 +1,9 @@
+/*
+ * This file contains the function that are common to all SHA2 simple
+ * parameter sets, namely the F function (which is the T function
+ * when given a single input)
+ */
+
 #include "sha2_func.h"
 #include "sha2.h"
 #include "internal.h"
