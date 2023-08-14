@@ -68,7 +68,8 @@ Step 1: allocate a struct ts_context structure:
 
               struct ts_context ctx;
 
-        you don't need to initialize it to anything special
+        you don't need to initialize it to anything special; the next step
+        will take care of that.
 
 Step 2: start off the signing process, by calling:
 
@@ -78,8 +79,9 @@ Step 2: start off the signing process, by calling:
         where:
           &ctx is the pointer to the context structure you allocated in
             step 1.
-          message_to_sign, length_of_message is the plaintext message (and
-            its length)
+          message_to_sign, length_of_message is the message to sign (and
+            its length).  You can reuse the buffer containing message_to_sign
+            for other purposes once ts_init_sign returns.
           parameter_set is a value specifying the Sphincs+ parameter set.
             tiny_sphincs.h has the various supported parameter sets listed
             at the end; a typical value might be &ts_ps_sha2_128f_simple
@@ -181,9 +183,9 @@ Step 3: feed it the next k bytes of the signature, by calling:
               far, 0 if it has detected a failure.  You can either react
               to the failure immediately, or you can ignore any reported
               intermediate failures and continue to feed it more parts of
-              the signature.  If that is convienent - ts_verify (below)
-              will report any failure, hence ignoring any intermediate
-              failures is safe.
+              the signature.  You can do whichever is convienent;
+              ts_verify (below) will report any failure, hence ignoring any
+              intermediate failures is safe.
 
 Step 4: after you've fed it the entire signature, you can check to see if
         it validated:
@@ -205,15 +207,29 @@ Some other (less interesting) things that this package provides:
         signature for the parameter set
 
 
+Note on the random function: during key generation, we need randomness to
+select the private key.  In addition, Sphincs+ can use randomness as a part
+of the signature generation process (although that's not nearly as critical).
+We would prefer not to call a fixed rng() function to do that, and the other
+obvious option of having the caller pass in a buffer of random bytes is a
+nonstarter.  So, what we do is have the caller pass in a function which
+presumably queries the hardware entropy source for randomness.  This random
+function has the signature
+    int random_function(unsigned char *buffer, size_t number_of_bytes);
+This random function is expected to either place number_of_bytes random
+bytes into buffer and return 1, or alternatively (on failure) return 0.
+
+
 Suggestions for parameter sets:
 
         This package is designed with HSMs in mind.  HSMs are typically
         designed with security (and not utmost performance) in mind.
         Because of this, we recommend that an F parameter set is more
         likely to yield reasonable performance (as well as a bit less RAM).
-        SHA-2 parameter sets tend to use a bit less RAM than SHAKE ones,
-        as well as performing a bit quicker.  We recommend that you take
-        that into consideration.
+        L1 SHA-2 parameter sets tend to use a bit less RAM than SHAKE ones
+        as well as performing a bit quicker; on the other hand, L3 and L5
+        SHA-2 parameter sets use rather more RAM than SHAKE ones.  We
+        recommend that you take that into consideration.
 
 
 Concepts in this package:
@@ -223,7 +239,10 @@ memory management
         application (such as a context pointer, or a buffer to hold some
         result), or allocated as auto (stack).  In addition, no VLAs are
         used.  The lack of VLAs and malloc's should make it easier to
-        characterize exacty how much memory is used.
+        characterize exacty how much memory is used.  Note that the testing
+        infrastructure (both the regression tests and the RAM usage
+        measurement logic) don't abide by this; you aren't expected to place
+        those into the HSM.
 
 parameter sets
 	This package can support multiple parameter sets at once from the
@@ -272,6 +291,16 @@ tune.h
 			      enabled); however if you need to absolutely
 			      minimize the RAM used, you can turn this off.
 
+Logic in dividing this package into source files
+	While the code size that this package takes up wasn't the major
+	consideration, it was a minor one.  We support 12 different parameter
+	sets; however it is likely that something using this package wouldn't
+	need all 12.  Hence, we divided up those sources that wouldn't be used
+	for some parameter sets into separate files - the idea is that, if
+	those parameter sets weren't used, those source files would not be
+	referenced, and so the linker would be able to omit them from the
+	actual image.
+
 Supported parameter sets
 	Currently, we support all SHAKE and SHA2 simple parameter sets
 	(subject to the restrictions that you specify within tune.h).  As
@@ -288,7 +317,7 @@ Utilities included with this package:
 
   We include a shell script (regression_test) that recompiles the package
   and runs a regression test (with all parameter sets enabled); it lists
-  whether the tests passed or failed
+  whether the tests passed or failed.
 
 - Measuring RAM usage
 
@@ -306,11 +335,74 @@ Utilities included with this package:
   performance CPUs); in addition, values pushed onto the stack (return
   addresses, saved registers) are 8 bytes each.  I would expect a compiler
   targeted toward an HSM CPU would do somewhat better.
-  And, TS_SHA2_OPTIMIZATION is turned off and TS_SHAKE256_OPT is set to 2
-  (both to minimize the RAM usage as much as possible).
+  And, for this test, TS_SHA2_OPTIMIZATION is turned off and TS_SHAKE256_OPT
+  is set to 2 (both to minimize the RAM usage as much as possible).
 
+
+Files included in this package - they can be broken into 4 sets:
+
+The core package that would be placed on the HSM:
+    endian.[ch]		Routines to read/write bigendian values
+    fips202.[ch]	A SHA-3 implementation
+    internal.h		Include file containing definitions of things that
+			don't need to be public outside this package
+    key_gen.c		The logic to create a public/private keypair
+    sha2_128[fs]_simple.c These 12 files contain the definitions of the
+    sha2_192[fs]_simple.c the supported parameter sets.  They are in separate
+    sha2_256[fs]_simple.c files so that if you don't refer to them, the linker
+    shake256_128[fs]_simple.c won't need to include them
+    shake256_192[fs]_simple.c
+    shake256_256[fs]_simple.c
+    sha256.c		A SHA-256 implementation
+    sha256_hash.c	Functions common to all SHA-2 parameter sets
+    sha256_L1_hash.c	Functions common to L1 SHA-2 parameter sets
+    sha256_L1_hash_simple.c Functions for the L1 SHA-2 simple parameter sets
+    sha2.h		Include file for both SHA-256 and SHA-512
+    sha2_func.h		Parameter set functions for SHA-2 parameter sets
+    sha512.c		A SHA-512 implementation
+    sha512_hash.c	Functions common to L3, L5 SHA-2 parameter sets
+    sha512_L35_hash_simple.c Functions for the L3, L5 SHA-2 simple parameter sets
+    shake256_func.h	Parameter set functions for SHAKE parameter sets
+    shake256_hash.c	Functions common to all SHAKE parameter sets
+    shake256_simple.c	Functions for the SHAKE simple parameter sets
+    size.c		Functions that return the size of things (e.g. the public key)
+    tiny_sphincs.c	The signature generation and much of the common code for
+			this package
+    tiny_sphincs.h	The public API to this package
+    tune.h		The current settings that this package runs with
+    verify.c		The signature verification logic
+
+The regression tests:
+    test_sphincs.c	Top level code for the regression tests
+    test_sphincs.h	Prototypes for the various regression tests
+    test_sha512.c	Regression test for SHA-512
+    test_testvector.c	Regression test that compares the public keys and signature
+			we generate to those generated by the reference code
+    testvector.h	Public keys and hashes of signatures generated by the
+			reference code
+    test_verify.c	Regression test for the verify function
+
+The RAM measurement test:
+    get_space.[ch]	Code to actually perform the RAM measurements
+    gen_space2.[ch]
+    ram_space.c		C main function to perform the RAM measurements
+    ram_space.py	Main python script to run through all 12 parameter sets
+			and perform the RAM measurement on each
+    ram_space.out	Example output of ram_space.py that ran on my system
+    stack.[ch]		Platform dependent code that attempts to measure stack usage
+
+Other:
+    Makefile		Logic to compile all of the above
+    read.me		This file
+    README.md		Summary readme for github
 
 Random thoughts:
+
+- Performance: if you set TS_SHA2_OPTIMIZATION to 1 and TS_SHAKE256_OPT to 0,
+  I would expect the performance to be pretty close to the performance of the
+  non-AVX version of the reference code.  While I have not measured it, the
+  bulk of the computation is spent evaluating hash functions, and that's
+  about the same for both.
 
 - One suggested idea was to allow the message to be entered incrementally
   during signature generation.  The initial problem with that is that the
@@ -337,7 +429,12 @@ Random thoughts:
 
 - The SHA2 implementations here has been customized to reduce the amount of
   RAM used (by reusing the message buffer to hold the expanded key
-  schedule).  The SHAKE implementation is standard.
+  schedule).  The SHAKE implementation implements three options; one which
+  is the standard code, one which is my attempt to reduce the amount of RAM
+  used by the standard code (which doesn't work on my system, it might on
+  yours), and a third is an alternative implementation by Markku-Juhani O.
+  Saarinen that significantly reduces the amount of RAM used (at the cost
+  of significantly reducing performance).
 
 - Currently, we assume that the compiler supports uint64_t.  Is this true
   for compilers targetting HSM CPUs?  While we could write some code to do
@@ -346,6 +443,4 @@ Random thoughts:
   operations natively).  We use uint64_t in the ts_context::merkle_tree
   variable, as well as the current hash implementations.
 
-- To do: comments, comments and more comments
-
-- To do: more regression tests (especially with verify)
+- To do: more regression tests (especially with verify, SHA-256, SHAKE)
