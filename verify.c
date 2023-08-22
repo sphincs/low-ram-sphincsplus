@@ -176,23 +176,30 @@ int ts_update_verify( const unsigned char *sig, unsigned m,
 	    }
 	    break;
 	case ts_verify_wots: {
+	    /*
+             * buffer contains the next digit in a WOTS signature
+	     */
             int digit = ctx->x.wots.digit++;
 
+	    /* Step that digit up to the tops of the Winternitz chain */
             for (int i=ctx->x.wots.digits[digit]; i<15; i++) {
                 ts_set_wots_f_adr(ctx, ctx->auth_path_node, digit, i);
                 (ctx->ps->f)( ctx->buffer, ctx->buffer, ctx );
             }
+	    /* And add that digit into the running hash */
             ctx->ps->next_t(&ctx->big_iter, ctx->buffer, ctx );
     
 	    int d = ctx->x.wots.digit;
 	    if (d != 2*ctx->ps->n + 3) break;
 
-	    /* We've generated all the WOTS digits */
+	    /* We've generated all the WOTS digits; finish the running hash */
+	    /* and that's the leaf node; go on to the Merkle authentication path */
             ctx->ps->final_t(ctx->auth_path_buffer, &ctx->big_iter, ctx );
 	    ctx->state = ts_verify_merkle;
 	    break;
 	    }
 	case ts_verify_merkle:
+	    /* buffer contains the next value from the authentication path */
 	    next_auth_path( ctx, ADR_TYPE_HASHTREE );
 	    if (ctx->merkle_level != ctx->ps->merkle_h) break;
 
@@ -215,7 +222,7 @@ int ts_update_verify( const unsigned char *sig, unsigned m,
 		} else {
 		    /* Nope, signature didn't verify (either because */
 		    /* the roots weren't the same, or there were some */
-		    /* extra bytes after the signature) */
+		    /* extra bytes after the signature, that is, m!=0) */
 		    ctx->state = ts_verify_fail;
 		    return 0;  /* Give the bad news to the caller */
 		}
