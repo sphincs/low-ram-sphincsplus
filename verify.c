@@ -43,9 +43,18 @@ void ts_init_verify( struct ts_context *ctx,
 #endif
 }
 
+/*
+ * This will process ctx->buffer as the next entry in an authentication
+ * path (within either a FORS or a Merkle tree).  typecode will be the
+ * code specific to what we're processing: ADR_TYPE_FORSTREE if we're
+ * processing a FORS authentication path, ADR_TYPE_HASHTREE if we're
+ * processing a Merkle authentication path
+ *
+ * ctx->auth_path_node contains the hash from the node just below us
+ */
 static void next_auth_path( struct ts_context *ctx,
 	                    enum hash_reason typecode ) {
-    unsigned h = ctx->merkle_level; /* Height of the auth path element */
+    unsigned h = ctx->merkle_level; /* Height of this auth path element */
     unsigned size_h = 1 << h;
 
     ctx->merkle_level += 1; /* When we're done, we're on to the next level */
@@ -54,15 +63,22 @@ static void next_auth_path( struct ts_context *ctx,
     union t_iterator *t = &ctx->small_iter;
     ctx->ps->init_t( t, ctx );
     if ((ctx->auth_path_node & size_h) != 0) {
+	/* We're at a right-hand node; buffer lies on the left */
  	ctx->ps->next_t( t, ctx->buffer, ctx );
 	ctx->ps->next_t( t, ctx->auth_path_buffer, ctx );
     } else { 
+	/* We're at a left-hand node; buffer lies on the right */
 	ctx->ps->next_t( t, ctx->auth_path_buffer, ctx );
 	ctx->ps->next_t( t, ctx->buffer, ctx );
     }
+	/* Place the result back into auth_path_buffer, which is where */
+	/* the next function will expect it */
     ctx->ps->final_t( ctx->auth_path_buffer, t, ctx );
 }
 
+/*
+ * This sets things up to as appropriate for the start of the WOTS verify
+ */
 static void set_up_wots_verify_signature(struct ts_context *ctx, unsigned next_leaf) {
     /* This is exactly the set-up for the WOTS signing process... */
     ts_set_up_wots_signature(ctx, next_leaf);
