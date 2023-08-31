@@ -19,6 +19,7 @@ static struct {
     int (*test_enabled)(int);          /* Check if this tests is enabled */
 } test_list[] = {
     { "sha512", test_sha512, "SHA512 known answer tests", 0, 0 },
+    { "shake256", test_shake256, "SHAKE256 known answer tests", 0, 0 },
     { "testvector", test_testvector, "test vectors extracted from the reference code", 0, 0 },
     { "verify", test_verify, "test verification logic", 1, 0 },
  /* Add more here */  

@@ -28,7 +28,8 @@ OBJECTS = tiny_sphincs.o key_gen.o size.o \
 	  sha2_192f_simple.o sha2_192s_simple.o \
 	  sha2_256f_simple.o sha2_256s_simple.o
 
-TEST_SOURCES = test_sphincs.c test_testvector.c test_sha512.c test_verify.c
+TEST_SOURCES = test_sphincs.c test_testvector.c test_sha512.c test_shake.c \
+	       test_verify.c
 
 #
 # Makes the regression test executable
